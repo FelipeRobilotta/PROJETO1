@@ -1,0 +1,264 @@
+
+Na Matricula colocamos esse codigo para sempre iniciar com esse formato:
+
+edtMatricula = "RA-"
+
+Botao Pesquisar:
+Criamos uma Local Procedure: para deixar o codigo mais organizado:
+
+------------------------------------------------------------------------
+
+Codigo dentro da procedure:
+
+
+PROCEDURE LocPesquisar()
+
+
+selecionarSQL is string =[
+	
+	SELECT 
+	
+	idMatricula
+	,matricula
+	,nomeCompleto
+	,idade
+	,telefone
+	,cep
+	,endereco +', '+
+	numeroCasa+', '+
+	bairro +', '+
+	cidade+' , '+
+	estado AS Endereco
+	
+	FROM aluno
+	
+	WHERE 1 = 1
+	
+	
+]
+
+
+IF edtNome <> "" THEN
+	selecionarSQL += " AND nomeCompleto like '%" + edtNome + "%'"
+END
+
+IF edtMatricula <> "" THEN
+	selecionarSQL += " And Matricula like '%" + edtMatricula + "%'"
+END
+
+ds is Data Source
+HFreeQuery(ds)
+
+IF NOT HExecuteSQLQuery(ds,conexao,hQueryWithoutCorrection,selecionarSQL) THEN
+	Info(HErrorInfo())
+	HFreeQuery(ds)
+	RETURN	
+ELSE
+	
+	
+	HReadFirst(ds)
+	IF HFound(ds) = False THEN
+		Info("Item nao Encontrado! ")
+		ReturnToCapture(edtNome)
+	END
+	
+END
+
+
+FileToMemoryTable(tblCadastroAluno,ds)
+HFreeQuery(ds)
+
+------------------------------------------------------------------------
+
+Botão Cadastrar:
+
+Esse primeiro IF: significa se o botão gravar for diferente de 0 ele ira abrir uma outra tela: que o nome dela é:
+FrmAlunoe passando os parametros para forme, no caso ela vai abrir como o motodo incluir.
+Usaremos essa mesmo forme para o modificar e o consultar
+
+Ai selecionar o gravar e abrir outra tela: ela ira abrir recebendo esses parametros:
+
+------------------------------------------------------------------------
+
+No caso do stctitulo, é o titulo da tela que ira mudar conforme o botão que for selecionado.
+
+No botão gravar ao clicar nele, colocamos umas validações para as edts ser obrigadorio digitar da forma correta
+F edtMatricula = "" THEN
+	NextTitle(" Atenção")
+	Warning("Não é possivel gravar sem a Matricula. ")
+	ReturnToCapture(edtMatricula)
+END
+IF Length(edtMatricula) <> 6  THEN
+	NextTitle(" Atenção")
+	Warning("É necessario ter 6 digitos para cadastrar a Matricula. ")
+	ReturnToCapture(edtMatricula)
+END
+IF edtNome = "" THEN
+	NextTitle("Atenção")
+	Warning("Não é possivel gravar sem o Nome")
+	ReturnToCapture(edtNome)
+END
+IF edtCep = "" THEN
+	NextTitle(" Atenção")
+	Warning("Não é possivel gravar sem o CEP. ")
+	ReturnToCapture(edtCep)
+END
+IF Length(edtCep) <> 9  THEN
+	NextTitle(" Atenção")
+	Warning("É necessario ter 9 digitos para cadastrar o CEP. ")
+	ReturnToCapture(edtCep)
+END
+IF edtEndereco = "" THEN
+	NextTitle("Atenção")
+	Warning("Não é possivel gravar sem o Endereço. ")
+	ReturnToCapture(edtEndereco)	
+END
+IF edtNumeroCasa1 = "" THEN
+	NextTitle("Atenção")
+	Warning("Não é possivel gravar sem o numero da Casa. ")
+	ReturnToCapture(edtNumeroCasa1)
+END
+IF edtBairro = "" THEN
+	NextTitle("Atenção")
+	Warning("Não é possivel gravar sem o Bairro. ")
+	ReturnToCapture(edtBairro)
+END
+IF edtCidade = "" THEN
+	NextTitle("Atenção")
+	Warning("Não é poessivel gravar sem a Cidade. ")
+	ReturnToCapture(edtCidade)
+END
+IF edtEstado = "" THEN
+	NextTitle("Atenção")
+	Warning("Não é possivel gravar sem o Estado. ")
+	ReturnToCapture(edtEstado)
+END
+
+
+<END>
+
+    ------------------------------------------------------------------------
+
+    Criamos uma localprocedure com o nome LocVerificarMatricula:
+Para verificar se a matricula que esta sendo cadastrada, já esta sendo utilizada e avisar ao usuario.
+
+Dentro da LocalVerificarMatricul: esta esse codigo
+
+
+PROCEDURE locVerificarMatricula()
+
+verificarMatricula is string = ""
+ds is Data Source
+
+verificarMatricula =[
+	
+	SELECT 
+	matricula
+	FROM 
+	aluno
+	WHERE Matricula = '%1'
+]
+
+verificarMatricula = StringBuild(verificarMatricula,edtMatricula)
+
+IF NOT HExecuteSQLQuery(ds,conexao,hQueryWithoutCorrection,verificarMatricula) THEN
+	Info("Erro ao resgatar dados!")
+	Close(MyWindow)
+	
+ELSE
+	HReadFirst(ds)
+	
+	IF operacao = "Incluir" THEN
+		IF NOT HFound(ds) THEN
+			
+			locIncluir()
+		
+		END
+		NextTitle("Atenção")
+		Warning("Matricula informada já existe, por favor informar outro numero! ")
+		ReturnToCapture(edtMatricula)	
+		
+		END
+		END
+		
+//
+
+O codigo verifica se já existe se existir uma matricula igual, avisa o usuario e returna na edt Matricula, caso não exista ele inclui o cadastro.
+Dentro da Local Procedure: locIncluir()
+
+Codigo dentro da locIncluir()
+
+//
+PROCEDURE locIncluir()
+
+ds is Data Source 
+
+sqlIncluir is string = ""
+
+sqlIncluir = [
+
+	insert into 
+		Aluno
+		 (
+		
+	matricula
+	,nomeCompleto   
+	,idade			
+	,telefone		
+	,cep			
+	,Endereco		
+	,numeroCasa		
+	,cidade			
+	,bairro			
+	,estado 
+		)
+	values
+		(
+	'%1'
+	,'%2'
+	,'%3'
+	,'%4'
+	,'%5'
+	,'%6'
+	,'%7'
+	,'%8'
+	,'%9'
+	,'%10'
+		)
+	
+]
+
+sqlIncluir = StringBuild(sqlIncluir,...
+edtMatricula,...
+edtNome,...
+edtIdade,...
+edtTelefone,...
+edtCep,...
+edtEndereco,...
+edtNumeroCasa1,...
+edtCidade,...
+edtBairro,...
+edtEstado...
+)
+
+IF HExecuteSQLQuery(ds,conexao,hQueryWithoutCorrection,sqlIncluir) THEN
+	Info("Cadastrado com sucesso! ")
+END
+
+Close()
+
+Tabela do banco de dados 
+
+create table aluno (
+	 idMatricula int identity
+	,matricula			varchar(10)	
+	,nomeCompleto		varchar(100)
+	,idade				int
+	,telefone			varchar(20)
+	,cep				varchar(20)
+	,endereco 			varchar(100)
+	,numeroCasa			varchar(10)
+	,bairro				varchar(100)
+	,cidade				varchar(50)
+	,estado				varchar(2)
+	)
