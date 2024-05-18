@@ -1,122 +1,266 @@
+- Lista de Alunos 
 
-Na Matricula colocamos esse codigo para sempre iniciar com esse formato:
-
-edtMatricula = "RA-"
-
-Botao Pesquisar:
-Criamos uma Local Procedure: para deixar o codigo mais organizado:
-
-------------------------------------------------------------------------
-
-Codigo dentro da procedure:
+Nome: Gustavo Ruas de Goes RA: 2202021
+Nome: Luan Cunha Faustino RA: 2202108
+Nome: Felipe da Silva Robliotta RA: 2200276
+-----------------------------------------------------------
 
 
-PROCEDURE LocPesquisar()
+TELA BrwProfessor
 
+Botao Pesquisar
+PROCEDURE locPesquisar()
 
-selecionarSQL is string =[
+Selecionar is string
+
+Selecionar = [
+
+	select
 	
-	SELECT 
+	IDRegistro		
+	,numeroRegistro
+	,nomeCompleto	
+	,cep			
+	,endereco +', '+		
+	numeroCasa  +', '+	
+	bairro +', '+			
+	cidade +', '+		
+	estado as Endereco
 	
-	idMatricula
-	,matricula
-	,nomeCompleto
-	,idade
-	,telefone
-	,cep
-	,endereco +', '+
-	numeroCasa+', '+
-	bairro +', '+
-	cidade+' , '+
-	estado AS Endereco
-	
-	FROM aluno
-	
-	WHERE 1 = 1
-	
-	
+	From  Professor
+
+	where 1 = 1
+
 ]
 
 
-IF edtNome <> "" THEN
-	selecionarSQL += " AND nomeCompleto like '%" + edtNome + "%'"
+IF edtRegistro <> "" THEN
+	Selecionar += " And numeroRegistro like '%" + edtRegistro + "%'"
 END
-
-IF edtMatricula <> "" THEN
-	selecionarSQL += " And Matricula like '%" + edtMatricula + "%'"
+IF edtNome <> "" THEN
+	Selecionar += " And nomeCompleto like '%" + edtNome + "%'"
 END
 
 ds is Data Source
 HFreeQuery(ds)
 
-IF NOT HExecuteSQLQuery(ds,conexao,hQueryWithoutCorrection,selecionarSQL) THEN
+IF NOT HExecuteSQLQuery(ds,ConectarBanco.Conexao,hQueryWithoutCorrection,Selecionar) THEN
 	Info(HErrorInfo())
 	HFreeQuery(ds)
-	RETURN	
-ELSE
-	
-	
-	HReadFirst(ds)
-	IF HFound(ds) = False THEN
-		Info("Item nao Encontrado! ")
-		ReturnToCapture(edtNome)
-	END
-	
+	RETURN
 END
 
+HReadFirst(ds)
+IF HFound(ds) = False THEN
+	Info("Item não Encontrado ")
+	ReturnToCapture(edtNome)
+END
 
-FileToMemoryTable(tblCadastroAluno,ds)
+FileToMemoryTable(tblCadastroProfessor,ds)
 HFreeQuery(ds)
 
-------------------------------------------------------------------------
 
-Botão Cadastrar:
+TableSort(tblCadastroProfessor,"+cNome")
 
-Esse primeiro IF: significa se o botão gravar for diferente de 0 ele ira abrir uma outra tela: que o nome dela é:
-FrmAlunoe passando os parametros para forme, no caso ela vai abrir como o motodo incluir.
-Usaremos essa mesmo forme para o modificar e o consultar
+-----------------------------------------------------------
 
-Ai selecionar o gravar e abrir outra tela: ela ira abrir recebendo esses parametros:
+Botão Cadastrar
 
-------------------------------------------------------------------------
-
-No caso do stctitulo, é o titulo da tela que ira mudar conforme o botão que for selecionado.
-
-No botão gravar ao clicar nele, colocamos umas validações para as edts ser obrigadorio digitar da forma correta
-F edtMatricula = "" THEN
-	NextTitle(" Atenção")
-	Warning("Não é possivel gravar sem a Matricula. ")
-	ReturnToCapture(edtMatricula)
+IF btnModificar <> 0 THEN
+	Open(frmProfessor,"Incluir",tblCadastroProfessor.cIDRegistro,cRegistro)
+	locPesquisar()
 END
-IF Length(edtMatricula) <> 6  THEN
+
+
+Botão Modificar
+
+IF TableCount(tblCadastroProfessor) = 0 THEN
+	Info("Tabela Vazia") 
+	RETURN
+END
+IF NOT TableSelectCount(tblCadastroProfessor) THEN
+	Info("Nada foi selecionado")
+	RETURN
+END
+
+IF TableSelectCount(tblCadastroProfessor) > 0 THEN 
+	id is string = tblCadastroProfessor.cIDRegistro
+	Open(frmProfessor,"Modificar",tblCadastroProfessor.cIDRegistro,cRegistro)// Enviando todo o registro selecionado para a tela forme
+	
+	locPesquisar()
+	TableSelectPlus(tblCadastroProfessor,TableSeek(tblCadastroProfessor.cIDRegistro,id)) // Selecionando a linha que foi modificada
+	
+END
+
+Botão Consultar
+
+IF TableSelectCount(tblCadastroProfessor) = 0 THEN
+	Info("Nada foi selecionado")
+	RETURN
+END
+
+Open(frmProfessor,"Consultar",tblCadastroProfessor.cIDRegistro,cRegistro)
+
+Botão Apagar
+
+PROCEDURE locApagar()
+
+verificarprofessor is boolean 
+
+IF TableSelectCount(tblCadastroProfessor) = 0 THEN
+	Info("Nenhum item selecionado")
+	RETURN
+END
+IF TableCount(tblCadastroProfessor) > 0 THEN
+	IF YesNo("Podemos Apagar esse codigo? ") THEN
+		HourGlass(True)
+
+		
+				dsapagar is Data Source 
+				sqlDelete is string = "delete from Professor where IDRegistro = %1"
+				
+				sqlDelete = StringBuild(sqlDelete,tblCadastroProfessor.cIDRegistro)
+				
+				
+				IF NOT	HExecuteSQLQuery(dsapagar,ConectarBanco.Conexao,hQueryWithoutCorrection,sqlDelete) THEN
+					
+					Info(HErrorInfo())
+					HFreeQuery(dsapagar)
+					RETURN
+				ELSE
+					
+					Info("Registro excluido com sucesso")
+					
+				END
+				
+				HFreeQuery(dsapagar)
+				ExecuteProcess(btnPesquisar,trtClick)
+			END
+			
+		END
+
+		-----------------------------------------------------------
+
+		TELA FrmProfessor
+
+Ao INICIAR A TELA, PASSANDO OS PARAMETROS
+
+PROCEDURE MyWindow(professor,ciDRegistro,cregistro)
+
+WITCH professor
+	
+	CASE "Incluir"
+		stcTitulo= "Cadastrar"
+	CASE "Modificar"
+		stcTitulo= "Modificar "
+		locPreencher()
+		
+	CASE "Consultar"
+		stcTitulo= "Consultar"
+		locPreencher()
+		edtEndereco		..State   = DisplayOnly
+		edtRegistro		..State   = DisplayOnly
+		edtNome 		..State   = DisplayOnly
+		edtCEP  		..State   = DisplayOnly
+		edtNumeroCasa	..State   = DisplayOnly
+		edtBairro   	..State   = DisplayOnly
+		edtCidade    	..State   = DisplayOnly
+		edtEstado    	..State   = DisplayOnly
+		btnGravar    	..Visible = False
+	OTHER CASE
+		
+END
+
+locPreencher()
+
+*Onde preenche a tela ao clicar no botão "Modificar e Consultar"
+
+PROCEDURE locPreencher()
+
+	preencher is string = [
+	
+	select 
+		numeroRegistro
+		,nomeCompleto
+		,cep
+		,endereco
+		,numeroCasa
+		,bairro
+		,cidade
+		,estado
+	from
+		Professor
+		
+	where 
+		IDRegistro = %1	
+	
+	]
+
+ds is Data Source 
+
+preencher = StringBuild(preencher,ciDRegistro)
+
+IF NOT HExecuteSQLQuery(ds,ConectarBanco.Conexao,hQueryWithoutCorrection,preencher) THEN
+	Error("Erro ao resgatar dados! ")
+	Close(MyWindow)
+
+ELSE 
+	HReadFirst(ds)
+	IF HFound(ds) THEN
+		
+		edtRegistro 	= ds.numeroRegistro	
+		edtNome			= ds.nomeCompleto
+		edtCEP			= ds.cep
+		edtEndereco		= ds.endereco
+		edtNumeroCasa	= ds.numeroCasa
+		edtBairro		= ds.Bairro
+		edtCidade		= ds.cidade
+		edtEstado		= ds.estado
+		
+	END
+END
+
+-----------------------------------------------------------
+
+Botão Gravar
+
+
+
+IF edtRegistro = "" THEN
 	NextTitle(" Atenção")
-	Warning("É necessario ter 6 digitos para cadastrar a Matricula. ")
-	ReturnToCapture(edtMatricula)
+	Warning("Não é possivel gravar sem o Registro. ")
+	ReturnToCapture(edtRegistro)
+END
+IF Length(edtRegistro) <> 6 THEN
+	NextTitle("Atenção")
+	Warning("È necessario ter 6 Digitos no Registro")
+	ReturnToCapture(edtRegistro)
 END
 IF edtNome = "" THEN
 	NextTitle("Atenção")
-	Warning("Não é possivel gravar sem o Nome")
+	Warning("Não é possivel gravar sem o Nome. ")
 	ReturnToCapture(edtNome)
 END
-IF edtCep = "" THEN
-	NextTitle(" Atenção")
-	Warning("Não é possivel gravar sem o CEP. ")
-	ReturnToCapture(edtCep)
+
+IF edtCEP = "" THEN
+	NextTitle("Atenção")
+	Warning("Não é possivel gravar sem o CEP")
+	ReturnToCapture(edtCEP)
 END
-IF Length(edtCep) <> 9  THEN
-	NextTitle(" Atenção")
-	Warning("É necessario ter 9 digitos para cadastrar o CEP. ")
-	ReturnToCapture(edtCep)
-END
+IF	Length(edtCEP) <> 9 THEN
+	NextTitle("Atenção")
+	Warning("É necessario ter 8 digitos no CEP")
+	ReturnToCapture(edtCEP)
+	END
 IF edtEndereco = "" THEN
 	NextTitle("Atenção")
 	Warning("Não é possivel gravar sem o Endereço. ")
-	ReturnToCapture(edtEndereco)	
+	ReturnToCapture(edtEndereco)
 END
-IF edtNumeroCasa1 = "" THEN
+IF edtNumeroCasa = "" THEN
 	NextTitle("Atenção")
-	Warning("Não é possivel gravar sem o numero da Casa. ")
-	ReturnToCapture(edtNumeroCasa1)
+	Warning("Não é possivel gravar sem o Numero da Casa. ")
+	ReturnToCapture(edtNumeroCasa)
 END
 IF edtBairro = "" THEN
 	NextTitle("Atenção")
@@ -125,7 +269,7 @@ IF edtBairro = "" THEN
 END
 IF edtCidade = "" THEN
 	NextTitle("Atenção")
-	Warning("Não é poessivel gravar sem a Cidade. ")
+	Warning("Não é possivel gravar sem a Cidade. ")
 	ReturnToCapture(edtCidade)
 END
 IF edtEstado = "" THEN
@@ -134,131 +278,198 @@ IF edtEstado = "" THEN
 	ReturnToCapture(edtEstado)
 END
 
+SWITCH professor
+		
+	CASE "Incluir"
+		locVerificarRegistro()
+	
+	CASE "Modificar"
+		locVerificarRegistro()
+		
+	
+	OTHER CASE
+		
+END
 
-<END>
 
-    ------------------------------------------------------------------------
+locVerificarRegistro()
 
-    Criamos uma localprocedure com o nome LocVerificarMatricula:
-Para verificar se a matricula que esta sendo cadastrada, já esta sendo utilizada e avisar ao usuario.
+PROCEDURE locVerificarRegistro()
 
-Dentro da LocalVerificarMatricul: esta esse codigo
+verificarRegistro is string = ""
+ds is Data Source
+
+verificarRegistro =[
+	select
+	numeroregistro 
+	from
+	professor
+	where 
+	numeroRegistro = '%1'	
+	
+]
+
+verificarRegistro = StringBuild(verificarRegistro,edtRegistro)
+
+IF NOT HExecuteSQLQuery(ds,ConectarBanco.Conexao,hQueryWithoutCorrection,verificarRegistro) THEN
+	Info("Erro ao resgastar dados")
+	Close(MyWindow)
+	
+ELSE 
+	HReadFirst(ds)
+	
+	IF professor = "Incluir" THEN
+		IF NOT HFound(ds) THEN
+			locIncluir()
+		END
+		NextTitle("Atenção!")
+		Warning("Registro informada já existe, por favor informar outro numero!")
+		ReturnToCapture(edtRegistro)
+	ELSE IF professor = "Modificar" THEN
+		IF edtRegistro = cregistro THEN
+		locModificar()
+		ELSE 
+		locVerificarModificar()
+		locModificar()
+		END
+	END
+	END
+	
+locIncluir()
+
+PROCEDURE locIncluir()
+
+ds is Data Source
+
+incluir is string =  ""
 
 
-PROCEDURE locVerificarMatricula()
+incluir = [
+
+
+	insert into 
+	
+	Professor
+		(
+		
+		numeroRegistro	
+		,nomeCompleto	
+		,cep			
+		,endereco		
+		,numeroCasa		
+		,bairro			
+		,cidade			
+		,estado			
+		)
+	values
+		(
+		'%1'
+		,'%2'
+		,'%3'
+		,'%4'
+		,'%5'
+		,'%6'
+		,'%7'
+		,'%8'
+		)
+
+]
+
+incluir = StringBuild (incluir,...
+edtRegistro,...
+edtNome,...
+edtCEP,...
+edtEndereco,...
+edtNumeroCasa,...
+edtBairro,...
+edtCidade,...
+edtEstado...
+)
+
+
+IF  HExecuteSQLQuery(ds,ConectarBanco.Conexao,hQueryWithoutCorrection,incluir) THEN
+	Info("Cadastro com sucesso! ")
+
+END
+Close()
+
+locModificar()
+
+PROCEDURE locModificar()
+ds is Data Source
+
+sqlModificar is string = ""
+
+sqlModificar = [
+
+	update Professor
+	set
+	
+	numeroRegistro       		='%1'
+	,nomeCompleto				='%2'
+	,cep						='%3'
+	,endereco					='%4'
+	,numeroCasa				='%5'
+	,bairro					='%6'
+	,cidade					='%7'
+	,estado					='%8'
+	
+	where IDRegistro
+							='%9'
+]
+sqlModificar = StringBuild(sqlModificar,...
+edtRegistro,...
+edtNome,...
+edtCEP,...
+edtEndereco,...
+edtNumeroCasa,...
+edtBairro,...
+edtCidade,...
+edtEstado,...
+ciDRegistro...
+)
+
+IF HExecuteSQLQuery(ds,ConectarBanco.Conexao,hQueryWithoutCorrection,sqlModificar) THEN
+	Info("Cadastro Modificado com sucesso! ")
+	Close(MyWindow)
+ELSE 
+	Info("Erro ao Modificar! ")
+	RETURN
+END
+
+locVerificarModificar()
+
+PROCEDURE locVerificarModificar()
 
 verificarMatricula is string = ""
 ds is Data Source
 
 verificarMatricula =[
 	
-	SELECT 
-	matricula
-	FROM 
-	aluno
-	WHERE Matricula = '%1'
+	select 
+	numeroRegistro
+	from 
+	Professor
+	where numeroRegistro = '%1'
 ]
 
-verificarMatricula = StringBuild(verificarMatricula,edtMatricula)
+verificarMatricula = StringBuild(verificarMatricula,edtRegistro)
 
-IF NOT HExecuteSQLQuery(ds,conexao,hQueryWithoutCorrection,verificarMatricula) THEN
+IF NOT HExecuteSQLQuery(ds,ConectarBanco.Conexao,hQueryWithoutCorrection,verificarMatricula) THEN
 	Info("Erro ao resgatar dados!")
 	Close(MyWindow)
 	
 ELSE
 	HReadFirst(ds)
-	
-	IF operacao = "Incluir" THEN
-		IF NOT HFound(ds) THEN
-			
-			locIncluir()
+	IF HFound(ds) THEN
 		
-		END
 		NextTitle("Atenção")
-		Warning("Matricula informada já existe, por favor informar outro numero! ")
-		ReturnToCapture(edtMatricula)	
+		Warning("Registro informado já existe, por favor informar outro numero! ")
+		ReturnToCapture(edtRegistro)	
 		
-		END
-		END
-		
-//
-
-O codigo verifica se já existe se existir uma matricula igual, avisa o usuario e returna na edt Matricula, caso não exista ele inclui o cadastro.
-Dentro da Local Procedure: locIncluir()
-
-Codigo dentro da locIncluir()
-
-//
-PROCEDURE locIncluir()
-
-ds is Data Source 
-
-sqlIncluir is string = ""
-
-sqlIncluir = [
-
-	insert into 
-		Aluno
-		 (
-		
-	matricula
-	,nomeCompleto   
-	,idade			
-	,telefone		
-	,cep			
-	,Endereco		
-	,numeroCasa		
-	,cidade			
-	,bairro			
-	,estado 
-		)
-	values
-		(
-	'%1'
-	,'%2'
-	,'%3'
-	,'%4'
-	,'%5'
-	,'%6'
-	,'%7'
-	,'%8'
-	,'%9'
-	,'%10'
-		)
+	END
 	
-]
-
-sqlIncluir = StringBuild(sqlIncluir,...
-edtMatricula,...
-edtNome,...
-edtIdade,...
-edtTelefone,...
-edtCep,...
-edtEndereco,...
-edtNumeroCasa1,...
-edtCidade,...
-edtBairro,...
-edtEstado...
-)
-
-IF HExecuteSQLQuery(ds,conexao,hQueryWithoutCorrection,sqlIncluir) THEN
-	Info("Cadastrado com sucesso! ")
+	
 END
 
-Close()
-
-Tabela do banco de dados 
-
-create table aluno (
-	 idMatricula int identity
-	,matricula			varchar(10)	
-	,nomeCompleto		varchar(100)
-	,idade				int
-	,telefone			varchar(20)
-	,cep				varchar(20)
-	,endereco 			varchar(100)
-	,numeroCasa			varchar(10)
-	,bairro				varchar(100)
-	,cidade				varchar(50)
-	,estado				varchar(2)
-	)
+-----------------------------------------------------------
